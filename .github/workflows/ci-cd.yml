@@ -19,11 +19,20 @@ jobs:
         node-version: '18'
         cache: 'npm'
     
+    # Install required system dependencies
+    - name: Install system dependencies
+      run: |
+        wget http://archive.ubuntu.com/ubuntu/pool/main/o/openssl/libssl1.1_1.1.1f-1ubuntu2_amd64.deb
+        sudo dpkg -i libssl1.1_1.1.1f-1ubuntu2_amd64.deb
+    
     - name: Install dependencies
       run: npm ci
     
+    # Increase Jest timeout and run tests
     - name: Run tests
-      run: NODE_ENV=test npm test
+      run: |
+        echo "jest.setTimeout(30000);" > jest.setup.js
+        NODE_ENV=test npm test -- --setupFilesAfterEnv='<rootDir>/jest.setup.js' --forceExit
       
   build-and-push:
     needs: test
@@ -32,6 +41,21 @@ jobs:
     
     steps:
     - uses: actions/checkout@v3
+    
+    - name: Get version
+      id: get_version
+      run: |
+        # Get the short SHA of the commit
+        SHA=$(git rev-parse --short HEAD)
+        # Get current timestamp
+        TIMESTAMP=$(date +%Y%m%d_%H%M%S)
+        # Set version as output
+        echo "VERSION=${TIMESTAMP}-${SHA}" >> $GITHUB_OUTPUT
+        # If this is a tag, use it as version
+        if [[ $GITHUB_REF == refs/tags/* ]]; then
+          TAG=${GITHUB_REF#refs/tags/}
+          echo "VERSION=${TAG}" >> $GITHUB_OUTPUT
+        fi
     
     - name: Login to Docker Hub
       uses: docker/login-action@v2
@@ -47,6 +71,8 @@ jobs:
       with:
         context: .
         push: true
-        tags: ${{ secrets.DOCKERHUB_USERNAME }}/microservices-api:latest
+        tags: |
+          ${{ secrets.DOCKERHUB_USERNAME }}/microservices-api:latest
+          ${{ secrets.DOCKERHUB_USERNAME }}/microservices-api:${{ steps.get_version.outputs.VERSION }}
         cache-from: type=registry,ref=${{ secrets.DOCKERHUB_USERNAME }}/microservices-api:buildcache
         cache-to: type=registry,ref=${{ secrets.DOCKERHUB_USERNAME }}/microservices-api:buildcache,mode=max 

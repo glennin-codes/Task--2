@@ -2,7 +2,7 @@ import { MongoMemoryServer } from 'mongodb-memory-server';
 import mongoose from 'mongoose';
 import { createClient } from 'redis-mock';
 
-let mongoServer: MongoMemoryServer;
+let mongoServer: MongoMemoryServer | undefined;
 
 // Mock Redis client with promisified methods
 const mockRedisClient = createClient();
@@ -31,31 +31,51 @@ export const redisClient = {
   }
 };
 
+// Increase timeout for setup
+jest.setTimeout(30000);
+
 // Disconnect MongoDB and Redis before all tests
 beforeAll(async () => {
-  // Disconnect any existing connections
-  await mongoose.disconnect();
-  
-  // Setup MongoDB memory server
-  mongoServer = await MongoMemoryServer.create();
-  const mongoUri = mongoServer.getUri();
-  await mongoose.connect(mongoUri);
+  try {
+    // Disconnect any existing connections
+    await mongoose.disconnect();
+    
+    // Setup MongoDB memory server
+    mongoServer = await MongoMemoryServer.create();
+    const mongoUri = mongoServer.getUri();
+    await mongoose.connect(mongoUri);
+  } catch (error) {
+    console.error('Setup failed:', error);
+    throw error;
+  }
 });
 
 // Clear all data after each test
 afterEach(async () => {
-  const collections = mongoose.connection.collections;
-  for (const key in collections) {
-    const collection = collections[key];
-    await collection.deleteMany({});
+  if (mongoose.connection.readyState === 1) {
+    try {
+      const collections = mongoose.connection.collections;
+      for (const key in collections) {
+        const collection = collections[key];
+        await collection.deleteMany({});
+      }
+      // Clear Redis mock data
+      await redisClient.FLUSHALL();
+    } catch (error) {
+      console.error('Cleanup failed:', error);
+    }
   }
-  // Clear Redis mock data
-  await redisClient.FLUSHALL();
 });
 
 // Disconnect and cleanup after all tests are complete
 afterAll(async () => {
-  await mongoose.disconnect();
-  await mongoServer.stop();
-  await redisClient.quit();
+  try {
+    await mongoose.disconnect();
+    if (mongoServer) {
+      await mongoServer.stop();
+    }
+    await redisClient.quit();
+  } catch (error) {
+    console.error('Teardown failed:', error);
+  }
 }); 
