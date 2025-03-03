@@ -13,8 +13,8 @@ A Node.js microservices API with Redis and MongoDB integration, complete with Do
 
 1. Clone the repository:
 ```bash
-git clone <your-repository-url>
-cd <repository-name>
+git clone https://github.com/glennin-codes/Task--2.git
+cd Task--2
 ```
 
 2. Install dependencies:
