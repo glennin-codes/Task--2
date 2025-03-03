@@ -1,0 +1,38 @@
+{
+    "compilerOptions": {
+      /* Language and Environment */
+      "target": "es6",
+      /* Modules */
+      "module": "commonjs",
+      "rootDir": "./",
+      "moduleResolution": "node",
+      "esModuleInterop": true,
+     
+      "outDir": "./dist",
+  
+      // "mapRoot": "",
+      "sourceMap": true,
+  
+  
+      "forceConsistentCasingInFileNames": true,
+  
+      /* Type Checking */
+      "strict": true,
+
+      "noImplicitAny": false,
+      "strictFunctionTypes": false,
+      "strictNullChecks": false,
+      
+      // Allow more flexible return types
+      "noImplicitReturns": false,
+      
+      // Ignore return type mismatches
+      "strictBindCallApply": false,
+  
+      "skipLibCheck": true,
+      "typeRoots": ["./node_modules/@types"],
+    "types": ["jest", "node"]
+    },
+    "include": ["src/**/*", "__tests__/**/*"],
+    "exclude": ["node_modules"]
+}
